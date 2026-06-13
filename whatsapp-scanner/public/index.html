@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>BoriStory · Scanner de Pedidos do WhatsApp</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#07070d;--s1:#0e0e1a;--s2:#13132a;--bd:#1e1e34;--ac:#e63946;--go:#ffd60a;--bl:#4895ef;--gr:#25d366;--tx:#f0f0f8;--mu:#606078;--dim:#888899}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--tx);font-family:'Outfit',sans-serif;min-height:100vh;padding-bottom:60px}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--bd);border-radius:3px}
+a{color:var(--bl)}
+.topbar{position:sticky;top:0;z-index:50;background:rgba(7,7,13,.94);backdrop-filter:blur(14px);border-bottom:1px solid var(--bd);height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 22px}
+.logo{font-family:'Bebas Neue',sans-serif;font-size:1.7rem;letter-spacing:3px}
+.logo .r{color:var(--ac)}
+.logo small{font-family:'Outfit';font-size:.6rem;letter-spacing:2px;color:var(--mu);display:block;margin-top:-4px}
+.conn{display:flex;align-items:center;gap:8px;font-size:.72rem;font-weight:600}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--mu)}
+.dot.ok{background:var(--gr);box-shadow:0 0 8px var(--gr)}
+.dot.warn{background:var(--go)}
+.dot.err{background:var(--ac)}
+.wrap{max-width:1100px;margin:0 auto;padding:22px}
+.sh{font-family:'Bebas Neue',sans-serif;font-size:.92rem;letter-spacing:3px;color:var(--mu);text-transform:uppercase;margin:26px 0 12px;display:flex;align-items:center;gap:9px}
+.sh:first-child{margin-top:0}.sh::after{content:'';flex:1;height:1px;background:var(--bd)}
+
+.card{background:var(--s1);border:1px solid var(--bd);border-radius:14px;padding:18px}
+.qr-card{display:flex;gap:22px;align-items:center;flex-wrap:wrap}
+.qr-box{width:240px;height:240px;background:#fff;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.qr-box img{width:100%;height:100%;border-radius:12px}
+.qr-box.empty{background:var(--s2);color:var(--mu);font-size:.8rem;text-align:center;padding:20px;line-height:1.6}
+.qr-info h2{font-family:'Bebas Neue';font-size:1.5rem;letter-spacing:1px;margin-bottom:6px}
+.qr-info p{color:var(--mu);font-size:.84rem;line-height:1.7;max-width:420px}
+.qr-info ol{color:var(--mu);font-size:.82rem;line-height:1.8;margin:8px 0 0 18px}
+.statetag{display:inline-block;font-size:.66rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:3px 11px;border-radius:100px;margin-top:10px}
+.st-ok{background:rgba(37,211,102,.13);color:var(--gr);border:1px solid rgba(37,211,102,.3)}
+.st-warn{background:rgba(255,214,10,.12);color:var(--go);border:1px solid rgba(255,214,10,.3)}
+.st-err{background:rgba(230,57,70,.12);color:var(--ac);border:1px solid rgba(230,57,70,.3)}
+
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.kpi{background:var(--s1);border:1px solid var(--bd);border-radius:13px;padding:15px 17px}
+.kpi-v{font-family:'Bebas Neue';font-size:2.1rem;line-height:1;letter-spacing:1px}
+.kpi-l{font-size:.66rem;text-transform:uppercase;letter-spacing:1.2px;color:var(--mu);margin-top:5px}
+.kpi.ac .kpi-v{color:var(--ac)}.kpi.gr .kpi-v{color:var(--gr)}.kpi.go .kpi-v{color:var(--go)}.kpi.bl .kpi-v{color:var(--bl)}
+
+.filters{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+.fg{display:flex;flex-direction:column;gap:4px}
+.fg label{font-size:.62rem;text-transform:uppercase;letter-spacing:1px;color:var(--mu);font-weight:600}
+.fg input,.fg select{background:var(--s2);border:1px solid var(--bd);border-radius:9px;color:var(--tx);font-family:'Outfit';font-size:.82rem;padding:8px 11px;outline:none}
+.fg input:focus,.fg select:focus{border-color:var(--ac)}
+.btn{background:var(--ac);color:#fff;border:none;border-radius:9px;font-family:'Bebas Neue';font-size:1rem;letter-spacing:2px;padding:9px 20px;cursor:pointer;transition:transform .15s,opacity .15s}
+.btn:hover{transform:translateY(-1px)}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.btn.ghost{background:transparent;border:1px solid var(--bd);color:var(--mu)}
+.btn.ghost:hover{border-color:var(--ac);color:var(--tx)}
+.btn.gr{background:var(--gr);color:#04210f}
+.quick{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.chip{font-size:.7rem;font-weight:600;padding:5px 12px;border-radius:100px;background:var(--s2);border:1px solid var(--bd);color:var(--mu);cursor:pointer}
+.chip:hover{border-color:var(--ac);color:var(--tx)}
+
+.cats{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:9px;margin-top:4px}
+.catbox{background:var(--s2);border:1px solid var(--bd);border-radius:11px;padding:12px 14px;cursor:pointer;transition:border-color .15s}
+.catbox:hover,.catbox.on{border-color:var(--ac)}
+.catbox-n{font-size:.78rem;font-weight:600}
+.catbox-v{font-family:'Bebas Neue';font-size:1.5rem;color:var(--ac);margin-top:2px}
+.catbox-s{font-size:.6rem;color:var(--mu)}
+
+.orders{display:flex;flex-direction:column;gap:9px}
+.order{background:var(--s1);border:1px solid var(--bd);border-radius:12px;padding:13px 15px}
+.order-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap}
+.order-cli{font-weight:600;font-size:.92rem}
+.order-meta{font-size:.66rem;color:var(--mu);margin-top:2px}
+.badges{display:flex;gap:5px;flex-wrap:wrap;align-items:center}
+.bd{font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:3px 9px;border-radius:100px}
+.bd-cat{background:rgba(72,149,239,.12);color:var(--bl);border:1px solid rgba(72,149,239,.25)}
+.bd-pl{background:rgba(255,214,10,.12);color:var(--go);border:1px solid rgba(255,214,10,.3)}
+.order-itens{margin-top:9px;display:flex;flex-wrap:wrap;gap:6px}
+.iti{background:var(--s2);border:1px solid var(--bd);border-radius:8px;padding:4px 9px;font-size:.72rem}
+.iti b{color:var(--ac)}
+.order-txt{margin-top:8px;font-size:.74rem;color:var(--dim);line-height:1.5;font-style:italic;border-left:2px solid var(--bd);padding-left:9px}
+.order-foot{display:flex;justify-content:space-between;align-items:center;margin-top:10px;gap:8px;flex-wrap:wrap}
+.order-total{font-family:'Bebas Neue';font-size:1.2rem;color:var(--gr);letter-spacing:1px}
+.statusel{background:var(--s2);border:1px solid var(--bd);border-radius:8px;color:var(--tx);font-family:'Outfit';font-size:.74rem;padding:5px 9px;cursor:pointer}
+.del{background:none;border:none;color:var(--mu);cursor:pointer;font-size:.95rem}
+.del:hover{color:var(--ac)}
+.empty{text-align:center;color:var(--mu);padding:40px 16px;font-size:.86rem;line-height:1.8}
+
+.test{display:flex;gap:8px;flex-wrap:wrap}
+.test textarea{flex:1;min-width:260px;background:var(--s2);border:1px solid var(--bd);border-radius:10px;color:var(--tx);font-family:'Outfit';font-size:.84rem;padding:10px;resize:vertical;min-height:62px;outline:none}
+.test textarea:focus{border-color:var(--ac)}
+#testOut{margin-top:10px;font-size:.78rem;color:var(--mu);background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:11px 13px;display:none;line-height:1.7;white-space:pre-wrap}
+.sync-bar{height:5px;background:var(--bd);border-radius:100px;overflow:hidden;margin-top:8px;display:none}
+.sync-fill{height:100%;background:linear-gradient(90deg,var(--gr),var(--go));width:0;transition:width .3s}
+</style>
+</head>
+<body>
+<nav class="topbar">
+  <div class="logo"><span>BORI</span><span class="r">STORY</span><small>SCANNER DE PEDIDOS · WHATSAPP</small></div>
+  <div class="conn"><span class="dot" id="cDot"></span><span id="cTxt">conectando…</span></div>
+</nav>
+
+<div class="wrap">
+
+  <!-- CONEXÃO / QR -->
+  <div class="sh">Conexão</div>
+  <div class="card qr-card">
+    <div class="qr-box empty" id="qrBox">Aguardando o servidor gerar o QR Code…</div>
+    <div class="qr-info">
+      <h2 id="connH">Conecte seu WhatsApp</h2>
+      <p id="connP">No celular, abra o WhatsApp → <b>Aparelhos conectados</b> → <b>Conectar um aparelho</b> e aponte para o QR Code ao lado.</p>
+      <div id="connTag"></div>
+      <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn gr" id="syncBtn" disabled>⟳ Varrer histórico antigo</button>
+        <span style="font-size:.72rem;color:var(--mu);align-self:center" id="syncMsg"></span>
+      </div>
+      <div class="sync-bar" id="syncBar"><div class="sync-fill" id="syncFill"></div></div>
+    </div>
+  </div>
+
+  <!-- KPIs DO PERÍODO -->
+  <div class="sh">Resumo do período</div>
+  <div class="kpis" id="kpis"></div>
+
+  <!-- FILTROS -->
+  <div class="sh">Filtrar pedidos</div>
+  <div class="card">
+    <div class="filters">
+      <div class="fg"><label>De (data)</label><input type="date" id="fDe"></div>
+      <div class="fg"><label>Até (data)</label><input type="date" id="fAte"></div>
+      <div class="fg"><label>Categoria</label><select id="fCat"><option value="todas">Todas</option></select></div>
+      <div class="fg"><label>Status</label><select id="fStatus">
+        <option value="todos">Todos</option><option value="novo">Novo</option>
+        <option value="confirmado">Confirmado</option><option value="producao">Em produção</option>
+        <option value="pago">Pago</option><option value="entregue">Entregue</option>
+        <option value="cancelado">Cancelado</option></select></div>
+      <div class="fg"><label>Busca</label><input type="text" id="fBusca" placeholder="cliente, produto…"></div>
+      <button class="btn" id="aplicar">Aplicar</button>
+      <button class="btn ghost" id="limpar">Limpar</button>
+    </div>
+    <div class="quick">
+      <span class="chip" data-range="hoje">Hoje</span>
+      <span class="chip" data-range="7">Últimos 7 dias</span>
+      <span class="chip" data-range="30">Últimos 30 dias</span>
+      <span class="chip" data-range="mes">Este mês</span>
+      <span class="chip" data-range="tudo">Tudo</span>
+    </div>
+  </div>
+
+  <!-- CATEGORIAS -->
+  <div class="sh">Pedidos por categoria <span style="font-size:.6rem;color:var(--dim)">(clique p/ filtrar)</span></div>
+  <div class="cats" id="catGrid"></div>
+
+  <!-- LISTA -->
+  <div class="sh">Pedidos <span id="ordCount" style="color:var(--ac)"></span></div>
+  <div class="orders" id="orders"><div class="empty">Carregando…</div></div>
+
+  <!-- TESTE -->
+  <div class="sh">Testar detecção <span style="font-size:.6rem;color:var(--dim)">(sem precisar do WhatsApp)</span></div>
+  <div class="card">
+    <div class="test">
+      <textarea id="testTxt" placeholder="Ex.: Oi, quero 10 camisetas pretas M e 5 moletons G, com estampa em silk. Quanto fica?"></textarea>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <button class="btn" id="testBtn">Analisar</button>
+        <button class="btn ghost" id="testAddBtn">Salvar no painel</button>
+      </div>
+    </div>
+    <div id="testOut"></div>
+  </div>
+
+</div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const api = (p, o) => fetch(p, o).then(r => r.json());
+const STATUS_OPC = ['novo','confirmado','producao','pago','entregue','cancelado'];
+const STATUS_LBL = {novo:'Novo',confirmado:'Confirmado',producao:'Em produção',pago:'Pago',entregue:'Entregue',cancelado:'Cancelado'};
+const moeda = (v) => 'R$ ' + (Number(v)||0).toLocaleString('pt-BR',{minimumFractionDigits:2});
+
+function filtros(){
+  const f = {};
+  if($('#fDe').value) f.de = $('#fDe').value;
+  if($('#fAte').value) f.ate = $('#fAte').value;
+  if($('#fCat').value && $('#fCat').value!=='todas') f.categoria = $('#fCat').value;
+  if($('#fStatus').value && $('#fStatus').value!=='todos') f.status = $('#fStatus').value;
+  if($('#fBusca').value.trim()) f.busca = $('#fBusca').value.trim();
+  return f;
+}
+const qs = (o) => Object.entries(o).map(([k,v])=>k+'='+encodeURIComponent(v)).join('&');
+
+// ---- status da conexão / QR / sync ----
+async function tickStatus(){
+  let s; try{ s = await api('/api/status'); }catch(_){ return; }
+  const dot=$('#cDot'), txt=$('#cTxt'), tag=$('#connTag');
+  const mapa={
+    conectado:['ok','Conectado'+(s.numero?' · '+s.numero:''),'st-ok','Conectado'],
+    qr:['warn','Escaneie o QR','st-warn','Aguardando leitura do QR'],
+    autenticando:['warn','Autenticando…','st-warn','Autenticando'],
+    iniciando:['warn','Iniciando…','st-warn','Iniciando'],
+    desconectado:['err','Desconectado','st-err','Desconectado'],
+    erro:['err','Erro / WhatsApp off','st-err','Sem WhatsApp (modo teste)'],
+  };
+  const [cls,label,tagcls,taglbl]=mapa[s.status]||['','—','',''];
+  dot.className='dot '+cls; txt.textContent=label;
+  tag.innerHTML='<span class="statetag '+tagcls+'">'+taglbl+'</span>';
+
+  const box=$('#qrBox');
+  if(s.qrDataUrl){ box.className='qr-box'; box.innerHTML='<img src="'+s.qrDataUrl+'" alt="QR">'; }
+  else if(s.status==='conectado'){ box.className='qr-box empty'; box.innerHTML='✅<br>WhatsApp conectado'; }
+  else if(s.status==='erro'){ box.className='qr-box empty'; box.innerHTML='WhatsApp não conectado.<br>Rode <code>npm install</code> e <code>npm start</code>.<br>O modo teste abaixo funciona mesmo assim.'; }
+
+  $('#syncBtn').disabled = s.status!=='conectado' || s.sincronizando;
+  const bar=$('#syncBar'), fill=$('#syncFill'), msg=$('#syncMsg');
+  if(s.sincronizando && s.progressoSync){
+    bar.style.display='block';
+    const p=s.progressoSync; const pct=p.total?Math.round(p.atual/p.total*100):0;
+    fill.style.width=pct+'%';
+    msg.textContent=`Varrendo ${p.atual}/${p.total} conversas · ${p.encontrados} pedido(s)…`;
+  } else if(s.sincronizado){
+    bar.style.display='none'; msg.textContent='Histórico já sincronizado.';
+  } else { bar.style.display='none'; }
+}
+
+// ---- KPIs + categorias (relatório) ----
+async function carregarRelatorio(){
+  const rel = await api('/api/relatorio?'+qs(filtros()));
+  $('#kpis').innerHTML = `
+    <div class="kpi ac"><div class="kpi-v">${rel.total}</div><div class="kpi-l">Pedidos no período</div></div>
+    <div class="kpi go"><div class="kpi-v">${rel.pecas}</div><div class="kpi-l">Peças (qtd. total)</div></div>
+    <div class="kpi gr"><div class="kpi-v">${moeda(rel.receita)}</div><div class="kpi-l">Valor estimado</div></div>
+    <div class="kpi bl"><div class="kpi-v">${Object.keys(rel.porCategoria).length}</div><div class="kpi-l">Categorias ativas</div></div>`;
+  const cats = await api('/api/categorias');
+  const grid=$('#catGrid'); grid.innerHTML='';
+  cats.forEach(c=>{
+    const n = rel.porCategoria[c]||0;
+    const div=document.createElement('div');
+    div.className='catbox'+($('#fCat').value===c?' on':'');
+    div.innerHTML=`<div class="catbox-n">${c}</div><div class="catbox-v">${n}</div><div class="catbox-s">no período</div>`;
+    div.onclick=()=>{ $('#fCat').value = $('#fCat').value===c?'todas':c; recarregar(); };
+    grid.appendChild(div);
+  });
+}
+
+// ---- lista de pedidos ----
+async function carregarPedidos(){
+  const lista = await api('/api/pedidos?'+qs(filtros()));
+  $('#ordCount').textContent = lista.length?('· '+lista.length):'';
+  const el=$('#orders');
+  if(!lista.length){ el.innerHTML='<div class="empty">Nenhum pedido encontrado com esses filtros.<br>Conecte o WhatsApp e varra o histórico, ou use o teste abaixo.</div>'; return; }
+  el.innerHTML='';
+  lista.forEach(p=>{
+    const d=new Date(p.data);
+    const itens=(p.itens||[]).map(i=>`<span class="iti"><b>${i.quantidade}×</b> ${i.produto}${i.tamanho?' '+i.tamanho:''}${i.cor?' · '+i.cor:''}</span>`).join('');
+    const catBadge = p.categoria==='Trabalho PL'?'bd-pl':'bd-cat';
+    const opcoes = STATUS_OPC.map(s=>`<option value="${s}"${p.status===s?' selected':''}>${STATUS_LBL[s]}</option>`).join('');
+    const div=document.createElement('div'); div.className='order';
+    div.innerHTML=`
+      <div class="order-top">
+        <div>
+          <div class="order-cli">${p.cliente?.nome||p.cliente?.telefone||'Cliente'}</div>
+          <div class="order-meta">${p.cliente?.telefone||''} · ${d.toLocaleDateString('pt-BR')} ${d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})} · conf. ${p.confianca}%${p.origem==='historico'?' · histórico':''}</div>
+        </div>
+        <div class="badges">
+          <span class="bd ${catBadge}">${p.categoria||'Outros'}</span>
+          ${(p.categorias||[]).filter(c=>c!==p.categoria).map(c=>`<span class="bd bd-cat">${c}</span>`).join('')}
+        </div>
+      </div>
+      ${itens?`<div class="order-itens">${itens}</div>`:''}
+      ${p.textoOriginal?`<div class="order-txt">“${p.textoOriginal.slice(0,220)}”</div>`:''}
+      <div class="order-foot">
+        <div class="order-total">${p.total?moeda(p.total):'—'}</div>
+        <div class="badges">
+          <select class="statusel" data-id="${p.id}">${opcoes}</select>
+          <button class="del" data-id="${p.id}" title="Remover">✕</button>
+        </div>
+      </div>`;
+    el.appendChild(div);
+  });
+  el.querySelectorAll('.statusel').forEach(s=>s.onchange=async()=>{
+    await api('/api/pedidos/'+s.dataset.id+'/status',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:s.value})});
+    carregarRelatorio();
+  });
+  el.querySelectorAll('.del').forEach(b=>b.onclick=async()=>{
+    await api('/api/pedidos/'+b.dataset.id,{method:'DELETE'}); recarregar();
+  });
+}
+
+function recarregar(){ carregarRelatorio(); carregarPedidos(); }
+
+// ---- filtros rápidos ----
+function setRange(r){
+  const hoje=new Date(); const fmt=(d)=>d.toISOString().slice(0,10);
+  let de='',ate=fmt(hoje);
+  if(r==='hoje') de=fmt(hoje);
+  else if(r==='7'){const d=new Date(hoje);d.setDate(d.getDate()-6);de=fmt(d);}
+  else if(r==='30'){const d=new Date(hoje);d.setDate(d.getDate()-29);de=fmt(d);}
+  else if(r==='mes'){de=fmt(new Date(hoje.getFullYear(),hoje.getMonth(),1));}
+  else if(r==='tudo'){de='';ate='';}
+  $('#fDe').value=de; $('#fAte').value=ate; recarregar();
+}
+
+// ---- listeners ----
+$('#aplicar').onclick=recarregar;
+$('#limpar').onclick=()=>{['fDe','fAte','fBusca'].forEach(i=>$('#'+i).value='');$('#fCat').value='todas';$('#fStatus').value='todos';recarregar();};
+document.querySelectorAll('.chip[data-range]').forEach(c=>c.onclick=()=>setRange(c.dataset.range));
+$('#fStatus').onchange=recarregar; $('#fBusca').onkeydown=(e)=>{if(e.key==='Enter')recarregar();};
+$('#syncBtn').onclick=async()=>{ $('#syncBtn').disabled=true; await api('/api/sincronizar',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}); };
+
+$('#testBtn').onclick=async()=>{
+  const d=await api('/api/testar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({texto:$('#testTxt').value})});
+  const out=$('#testOut'); out.style.display='block';
+  out.textContent =
+    `É pedido? ${d.ehPedido?'SIM':'não'}  ·  confiança ${d.confianca}%  ·  score ${d.score}\n`+
+    `Categoria: ${d.categoria}  (${(d.categorias||[]).join(', ')||'—'})\n`+
+    `Status: ${d.status}\n`+
+    `Itens: ${(d.itens||[]).map(i=>`${i.quantidade}× ${i.produto}${i.tamanho?' '+i.tamanho:''}${i.cor?'/'+i.cor:''}`).join('; ')||'—'}\n`+
+    `Valor: ${d.total?moeda(d.total):'—'}`;
+};
+$('#testAddBtn').onclick=async()=>{
+  await api('/api/registrar-teste',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({texto:$('#testTxt').value})});
+  recarregar();
+};
+
+// carregar categorias no select
+api('/api/categorias').then(cats=>{
+  const sel=$('#fCat');
+  cats.forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;sel.appendChild(o);});
+});
+
+tickStatus(); setInterval(tickStatus,2500);
+recarregar();
+</script>
+</body>
+</html>

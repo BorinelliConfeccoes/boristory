@@ -1,0 +1,16 @@
+{
+  "name": "boristory-whatsapp-scanner",
+  "version": "1.0.0",
+  "description": "Scanner de pedidos do WhatsApp para a Borinelli Confecções — lê mensagens ao vivo via QR Code e identifica pedidos (cliente, produtos, valores, status).",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node test/parser.test.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "qrcode": "^1.5.3",
+    "whatsapp-web.js": "^1.23.0"
+  },
+  "license": "MIT"
+}
