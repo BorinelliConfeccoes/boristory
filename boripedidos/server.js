@@ -187,11 +187,25 @@ function iniciarWhatsApp() {
     return;
   }
 
+  const chrome = acharChrome();
+  if (chrome) console.log('[whatsapp] usando o Chrome instalado:', chrome);
+
   const client = new Client({
     authStrategy: new LocalAuth({ dataPath: path.join(__dirname, '.wwebjs_auth') }),
     puppeteer: {
       headless: true,
+      // Usa o Chrome já instalado no computador (Windows/Mac/Linux), evitando
+      // o download do navegador do puppeteer (que falha em redes restritas).
+      executablePath: chrome || process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
       args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      protocolTimeout: 120000,
+    },
+    // Fixa uma versão estável do WhatsApp Web. Sem isso, o WhatsApp às vezes
+    // recarrega a página durante a conexão e dá o erro "Execution context was
+    // destroyed". Esta versão é conhecida por conectar de forma estável.
+    webVersionCache: {
+      type: 'remote',
+      remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.2412.54.html',
     },
   });
 
@@ -237,10 +251,50 @@ function iniciarWhatsApp() {
   });
 
   estado.status = 'iniciando';
+  iniciarComRetentativa(client, 3);
+}
+
+// Tenta inicializar; se o WhatsApp recarregar a página no meio (erro de
+// "Execution context was destroyed"), espera e tenta de novo algumas vezes.
+function iniciarComRetentativa(client, tentativasRestantes) {
   client.initialize().catch((e) => {
-    estado.status = 'erro';
-    console.error('[whatsapp] erro ao inicializar:', e.message);
+    const msg = e && e.message ? e.message : String(e);
+    if (tentativasRestantes > 1) {
+      console.warn(`[whatsapp] tropeço ao conectar (${msg}). Tentando de novo em 5s... (${tentativasRestantes - 1} restante(s))`);
+      setTimeout(() => iniciarComRetentativa(client, tentativasRestantes - 1), 5000);
+    } else {
+      estado.status = 'erro';
+      console.error('[whatsapp] erro ao inicializar:', msg);
+    }
   });
+}
+
+// Procura o Google Chrome (ou Edge) já instalado no computador.
+function acharChrome() {
+  if (process.env.PUPPETEER_EXECUTABLE_PATH && fs.existsSync(process.env.PUPPETEER_EXECUTABLE_PATH)) {
+    return process.env.PUPPETEER_EXECUTABLE_PATH;
+  }
+  const home = process.env.LOCALAPPDATA || process.env.HOME || '';
+  const candidatos = [
+    // Windows — Chrome
+    'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+    'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+    home && home + '\\Google\\Chrome\\Application\\chrome.exe',
+    // Windows — Edge (também serve)
+    'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
+    'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
+    // macOS
+    '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+    '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge',
+    // Linux
+    '/usr/bin/google-chrome',
+    '/usr/bin/chromium-browser',
+    '/usr/bin/chromium',
+  ].filter(Boolean);
+  for (const c of candidatos) {
+    try { if (fs.existsSync(c)) return c; } catch (_) { /* ignore */ }
+  }
+  return null;
 }
 
 /**
