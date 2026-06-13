@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * BoriStory — Scanner de Pedidos do WhatsApp
+ * BoriPedidos — Scanner de Pedidos do WhatsApp
  *
  * Conecta ao seu WhatsApp via QR Code (igual ao WhatsApp Web), lê as
  * mensagens recebidas ao vivo, detecta pedidos e disponibiliza tudo num
@@ -354,7 +354,7 @@ function catalogoInfo() {
 // ---------- Boot ----------
 
 app.listen(PORT, () => {
-  console.log(`\nBoriStory Scanner rodando em http://localhost:${PORT}`);
+  console.log(`\nBoriPedidos rodando em http://localhost:${PORT}`);
   console.log('Abra o endereço acima no navegador para ver o painel e o QR Code.\n');
   iniciarWhatsApp();
 });

@@ -1,4 +1,4 @@
-# BoriStory · Scanner de Pedidos do WhatsApp
+# BoriPedidos · Scanner de Pedidos do WhatsApp
 
 Lê as mensagens do seu WhatsApp **ao vivo** (conexão por QR Code, igual ao
 WhatsApp Web), identifica automaticamente os **pedidos** e mostra tudo num
