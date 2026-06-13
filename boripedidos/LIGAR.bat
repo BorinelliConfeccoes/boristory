@@ -3,6 +3,9 @@ chcp 65001 >nul
 title BoriPedidos
 cd /d "%~dp0"
 
+REM Nao baixar o navegador interno do puppeteer (usamos o Chrome do PC).
+set PUPPETEER_SKIP_DOWNLOAD=true
+
 echo ============================================
 echo            LIGANDO O BORIPEDIDOS
 echo ============================================
