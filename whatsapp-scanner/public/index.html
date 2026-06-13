@@ -91,6 +91,24 @@ a{color:var(--bl)}
 #testOut{margin-top:10px;font-size:.78rem;color:var(--mu);background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:11px 13px;display:none;line-height:1.7;white-space:pre-wrap}
 .sync-bar{height:5px;background:var(--bd);border-radius:100px;overflow:hidden;margin-top:8px;display:none}
 .sync-fill{height:100%;background:linear-gradient(90deg,var(--gr),var(--go));width:0;transition:width .3s}
+
+.falta{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-top:9px}
+.falta-l{font-size:.6rem;text-transform:uppercase;letter-spacing:.8px;color:var(--mu);font-weight:600}
+.falta-chip{font-size:.64rem;font-weight:600;padding:3px 9px;border-radius:100px;background:rgba(255,214,10,.1);border:1px solid rgba(255,214,10,.28);color:var(--go)}
+.falta-ok{font-size:.64rem;font-weight:700;padding:3px 9px;border-radius:100px;background:rgba(37,211,102,.12);border:1px solid rgba(37,211,102,.3);color:var(--gr)}
+.acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.act{font-size:.72rem;font-weight:600;padding:6px 12px;border-radius:8px;border:1px solid var(--bd);background:var(--s2);color:var(--tx);cursor:pointer;transition:border-color .15s}
+.act:hover{border-color:var(--gr)}
+.act.send{background:var(--gr);color:#04210f;border-color:var(--gr)}
+.compose{display:none;margin-top:9px;background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:10px}
+.compose.on{display:block}
+.compose textarea{width:100%;background:var(--bg);border:1px solid var(--bd);border-radius:8px;color:var(--tx);font-family:'Outfit';font-size:.8rem;padding:8px;resize:vertical;min-height:64px;outline:none}
+.compose textarea:focus{border-color:var(--gr)}
+.compose-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px;align-items:center}
+.compose-msg{font-size:.7rem;margin-left:auto}
+.tpl{font-size:.66rem;padding:4px 9px;border-radius:100px;background:var(--bg);border:1px solid var(--bd);color:var(--mu);cursor:pointer}
+.tpl:hover{border-color:var(--gr);color:var(--tx)}
+.off-note{font-size:.66rem;color:var(--go);margin-top:6px}
 </style>
 </head>
 <body>
@@ -109,9 +127,12 @@ a{color:var(--bl)}
       <h2 id="connH">Conecte seu WhatsApp</h2>
       <p id="connP">No celular, abra o WhatsApp → <b>Aparelhos conectados</b> → <b>Conectar um aparelho</b> e aponte para o QR Code ao lado.</p>
       <div id="connTag"></div>
-      <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn gr" id="syncBtn" disabled>⟳ Varrer histórico antigo</button>
-        <span style="font-size:.72rem;color:var(--mu);align-self:center" id="syncMsg"></span>
+      <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <button class="btn gr" id="syncBtn" disabled>⟳ Varrer histórico</button>
+        <span style="font-size:.74rem;color:var(--mu)">últimos</span>
+        <input type="number" id="syncDias" value="14" min="0" max="365" style="width:64px;background:var(--s2);border:1px solid var(--bd);border-radius:8px;color:var(--tx);padding:7px;font-family:'Outfit'">
+        <span style="font-size:.74rem;color:var(--mu)">dias (0 = tudo)</span>
+        <span style="font-size:.72rem;color:var(--mu)" id="syncMsg"></span>
       </div>
       <div class="sync-bar" id="syncBar"><div class="sync-fill" id="syncFill"></div></div>
     </div>
@@ -172,6 +193,8 @@ a{color:var(--bl)}
 <script>
 const $ = (s) => document.querySelector(s);
 const api = (p, o) => fetch(p, o).then(r => r.json());
+// estado global do painel (templates de mensagem + se o WhatsApp está conectado)
+const APP = { conectado:false, templates:{ saudacao:'Olá {nome}!', pagamento:'Olá {nome}! Vamos fechar o pagamento?', catalogo:'Olá {nome}! Segue nosso catálogo 😊' } };
 const STATUS_OPC = ['novo','confirmado','producao','pago','entregue','cancelado'];
 const STATUS_LBL = {novo:'Novo',confirmado:'Confirmado',producao:'Em produção',pago:'Pago',entregue:'Entregue',cancelado:'Cancelado'};
 const moeda = (v) => 'R$ ' + (Number(v)||0).toLocaleString('pt-BR',{minimumFractionDigits:2});
@@ -200,6 +223,7 @@ async function tickStatus(){
     erro:['err','Erro / WhatsApp off','st-err','Sem WhatsApp (modo teste)'],
   };
   const [cls,label,tagcls,taglbl]=mapa[s.status]||['','—','',''];
+  APP.conectado = s.status==='conectado';
   dot.className='dot '+cls; txt.textContent=label;
   tag.innerHTML='<span class="statetag '+tagcls+'">'+taglbl+'</span>';
 
@@ -252,6 +276,11 @@ async function carregarPedidos(){
     const itens=(p.itens||[]).map(i=>`<span class="iti"><b>${i.quantidade}×</b> ${i.produto}${i.tamanho?' '+i.tamanho:''}${i.cor?' · '+i.cor:''}</span>`).join('');
     const catBadge = p.categoria==='Trabalho PL'?'bd-pl':'bd-cat';
     const opcoes = STATUS_OPC.map(s=>`<option value="${s}"${p.status===s?' selected':''}>${STATUS_LBL[s]}</option>`).join('');
+    const falta = pendencias(p);
+    const faltaHtml = falta.length
+      ? `<span class="falta-l">Falta pra fechar:</span>`+falta.map(f=>`<span class="falta-chip">${f}</span>`).join('')
+      : `<span class="falta-ok">✓ Pronto pra fechar</span>`;
+    const tel = (p.cliente?.telefone||'').replace(/\D/g,'');
     const div=document.createElement('div'); div.className='order';
     div.innerHTML=`
       <div class="order-top">
@@ -266,6 +295,23 @@ async function carregarPedidos(){
       </div>
       ${itens?`<div class="order-itens">${itens}</div>`:''}
       ${p.textoOriginal?`<div class="order-txt">“${p.textoOriginal.slice(0,220)}”</div>`:''}
+      <div class="falta">${faltaHtml}</div>
+      <div class="acts">
+        <button class="act" data-act="responder">💬 Responder</button>
+        <button class="act" data-act="orcamento">🧾 Mandar orçamento</button>
+        <button class="act" data-act="catalogo">📖 Enviar catálogo</button>
+      </div>
+      <div class="compose" data-tel="${tel}">
+        <textarea placeholder="Escreva a mensagem para ${p.cliente?.nome||'o cliente'}…"></textarea>
+        <div class="compose-row">
+          <span class="tpl" data-tpl="saudacao">Saudação</span>
+          <span class="tpl" data-tpl="pagamento">Cobrar pagamento</span>
+          <span class="tpl" data-tpl="catalogo">Texto do catálogo</span>
+          <button class="act send">Enviar no WhatsApp</button>
+          <span class="compose-msg"></span>
+        </div>
+        <div class="off-note" style="display:none">⚠️ Conecte o WhatsApp (QR Code lá em cima) para enviar de verdade.</div>
+      </div>
       <div class="order-foot">
         <div class="order-total">${p.total?moeda(p.total):'—'}</div>
         <div class="badges">
@@ -273,15 +319,74 @@ async function carregarPedidos(){
           <button class="del" data-id="${p.id}" title="Remover">✕</button>
         </div>
       </div>`;
+    ligarAcoes(div, p, tel);
     el.appendChild(div);
   });
   el.querySelectorAll('.statusel').forEach(s=>s.onchange=async()=>{
     await api('/api/pedidos/'+s.dataset.id+'/status',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:s.value})});
-    carregarRelatorio();
+    recarregar();
   });
   el.querySelectorAll('.del').forEach(b=>b.onclick=async()=>{
     await api('/api/pedidos/'+b.dataset.id,{method:'DELETE'}); recarregar();
   });
+}
+
+// "O que falta pra fechar" — mesma lógica do back-end, calculada aqui no painel.
+function pendencias(p){
+  const itens=p.itens||[]; const l=[];
+  if(!itens.length) l.push('Detalhar os itens');
+  if(itens.length && itens.some(i=>!i.tamanho)) l.push('Confirmar tamanhos');
+  if(itens.length && itens.some(i=>!i.cor)) l.push('Confirmar cores');
+  const temValor = typeof p.total==='number' || (Array.isArray(p.valores)&&p.valores.length);
+  if(!temValor) l.push('Combinar/enviar valor');
+  if(p.status==='novo') l.push('Aguardando confirmação');
+  if(p.status==='confirmado') l.push('Aguardando pagamento');
+  if(p.status==='pago') l.push('Produzir e entregar');
+  return l;
+}
+
+// Liga os botões de Responder / Orçamento / Catálogo de um pedido.
+function ligarAcoes(div, pedido, tel){
+  const compose=div.querySelector('.compose');
+  const ta=compose.querySelector('textarea');
+  const msg=compose.querySelector('.compose-msg');
+  const offNote=compose.querySelector('.off-note');
+  const abrir=()=>{ compose.classList.add('on'); offNote.style.display=APP.conectado?'none':'block'; };
+
+  div.querySelectorAll('.act[data-act]').forEach(b=>b.onclick=async()=>{
+    const a=b.dataset.act;
+    if(a==='responder'){ abrir(); ta.focus(); }
+    else if(a==='orcamento'){
+      abrir(); ta.value='Carregando orçamento…';
+      const r=await api('/api/pedidos/'+pedido.id+'/orcamento');
+      ta.value=r.texto||''; ta.focus();
+    }
+    else if(a==='catalogo'){
+      if(!APP.conectado){ abrir(); return; }
+      msg.textContent='Enviando catálogo…'; msg.style.color='var(--mu)';
+      const r=await api('/api/enviar-catalogo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({telefone:tel,legenda:aplicar(APP.templates.catalogo,pedido)})});
+      compose.classList.add('on');
+      msg.textContent=r.ok?('✓ Catálogo enviado ('+r.arquivo+')'):('✕ '+(r.erro||'erro'));
+      msg.style.color=r.ok?'var(--gr)':'var(--ac)';
+    }
+  });
+
+  compose.querySelectorAll('.tpl').forEach(t=>t.onclick=()=>{
+    ta.value=aplicar(APP.templates[t.dataset.tpl]||'',pedido);
+  });
+
+  compose.querySelector('.send').onclick=async()=>{
+    if(!ta.value.trim()){ msg.textContent='Escreva algo primeiro.'; msg.style.color='var(--go)'; return; }
+    msg.textContent='Enviando…'; msg.style.color='var(--mu)';
+    const r=await api('/api/enviar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({telefone:tel,mensagem:ta.value})});
+    msg.textContent=r.ok?'✓ Enviado!':('✕ '+(r.erro||'erro'));
+    msg.style.color=r.ok?'var(--gr)':'var(--ac)';
+  };
+}
+
+function aplicar(tpl,pedido){
+  const nome=((pedido.cliente&&pedido.cliente.nome)||'').trim().split(/\s+/)[0]||'tudo bem';
+  return String(tpl||'').replace(/\{nome\}/g,nome);
 }
 
 function recarregar(){ carregarRelatorio(); carregarPedidos(); }
@@ -303,7 +408,7 @@ $('#aplicar').onclick=recarregar;
 $('#limpar').onclick=()=>{['fDe','fAte','fBusca'].forEach(i=>$('#'+i).value='');$('#fCat').value='todas';$('#fStatus').value='todos';recarregar();};
 document.querySelectorAll('.chip[data-range]').forEach(c=>c.onclick=()=>setRange(c.dataset.range));
 $('#fStatus').onchange=recarregar; $('#fBusca').onkeydown=(e)=>{if(e.key==='Enter')recarregar();};
-$('#syncBtn').onclick=async()=>{ $('#syncBtn').disabled=true; await api('/api/sincronizar',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}); };
+$('#syncBtn').onclick=async()=>{ $('#syncBtn').disabled=true; const dias=Number($('#syncDias').value||0); await api('/api/sincronizar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({dias})}); };
 
 $('#testBtn').onclick=async()=>{
   const d=await api('/api/testar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({texto:$('#testTxt').value})});
@@ -325,6 +430,12 @@ api('/api/categorias').then(cats=>{
   const sel=$('#fCat');
   cats.forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;sel.appendChild(o);});
 });
+
+// carregar templates de mensagem e dias padrão de histórico
+api('/api/config').then(cfg=>{
+  if(cfg.templates) APP.templates=cfg.templates;
+  if(cfg.historicoDias!=null) $('#syncDias').value=cfg.historicoDias;
+}).catch(()=>{});
 
 tickStatus(); setInterval(tickStatus,2500);
 recarregar();

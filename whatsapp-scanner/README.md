@@ -23,7 +23,11 @@ integração), então pedidos que já passaram também aparecem.
 | **Data e status** | Data da mensagem + status (novo, confirmado, em produção, pago, entregue, cancelado) |
 | **Categorias** | Camisetas, Moletons, Calças e Shorts, Vestidos, Uniformes, Acessórios, Outros e **Trabalho PL** (estampa/silk/plotagem/sublimação) |
 | **Filtro por datas** | Intercale "de/até" e veja **quantos pedidos** houve no período |
-| **Histórico antigo** | Varre conversas anteriores e captura pedidos que já passaram |
+| **Histórico antigo** | Varre conversas anteriores (ex.: últimos 14 dias) e captura pedidos que já passaram |
+| **Responder o cliente** | Envie mensagem pelo WhatsApp direto do painel |
+| **Orçamento automático** | Gera o texto do orçamento com os itens do pedido (edite e envie) |
+| **Catálogo** | Envia o arquivo do catálogo (pasta `catalogo/`) com um clique |
+| **O que falta pra fechar** | Lista, em cada pedido, o que ainda precisa (tamanho, valor, pagamento…) |
 
 ---
 
@@ -66,10 +70,22 @@ npm test
 |---|---|---|
 | `PORT` | `3000` | Porta do servidor/painel |
 | `SCORE_MINIMO` | `4` | Pontuação mínima (0–10) p/ registrar como pedido. Aumente p/ ser mais rigoroso |
-| `HISTORICO_LIMITE` | `200` | Quantas mensagens antigas varrer por conversa |
+| `HISTORICO_LIMITE` | `300` | Quantas mensagens antigas varrer por conversa |
+| `HISTORICO_DIAS` | `14` | Só considerar mensagens dos últimos N dias (0 = sem limite de tempo) |
 | `SYNC_AO_CONECTAR` | `1` | `0` desliga a varredura automática do histórico ao conectar |
+| `NOME_EMPRESA` | `Borinelli Confecções` | Nome usado nas mensagens prontas |
+| `CATALOGO_PATH` | `./catalogo` | Pasta onde fica o arquivo do catálogo |
 
-Exemplo: `SCORE_MINIMO=5 HISTORICO_LIMITE=500 npm start`
+Exemplo: `HISTORICO_DIAS=30 SCORE_MINIMO=5 npm start`
+
+### Enviar mensagens, orçamento e catálogo
+Cada pedido no painel tem três botões:
+- **💬 Responder** — escreva e envie uma mensagem pelo WhatsApp.
+- **🧾 Mandar orçamento** — abre um texto já montado com os itens do pedido; edite e envie.
+- **📖 Enviar catálogo** — envia o arquivo que estiver na pasta [`catalogo/`](catalogo/).
+
+Para o catálogo: coloque **uma imagem ou PDF** dentro da pasta `catalogo/`.
+O envio só funciona com o WhatsApp **conectado** (QR Code).
 
 ---
 
